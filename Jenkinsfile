@@ -105,12 +105,4 @@ pipeline {
 
   }
   
-  post {
-      success {
-          slackSend message: "Job: ${env.JOB_NAME} - Build: ${env.BUILD_NUMBER} - was successful  (<${env.BUILD_URL}| Link>)"
-      }
-      failure {
-          slackSend message: "Job: ${env.JOB_NAME} - Build: ${env.BUILD_NUMBER} - failed  (<${env.BUILD_URL}| Link>)", failOnError: true
-      }
-  }
 }
