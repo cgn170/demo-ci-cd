@@ -36,10 +36,20 @@ async def read_root():
 # Default test endpoint
 @app.get(f"{prefix_api_v1}/demo", 
             response_description="Demo endpoint",)
-async def read_root():
+async def demo():
     return {
         "status_code": status.HTTP_200_OK,
         "response_type": "success",
         "detail": "Demo endpoint"
+    }
+
+# Nuevo test endpoint
+@app.get(f"{prefix_api_v1}/nuevo", 
+            response_description="Nuevo endpoint",)
+async def nuevo():
+    return {
+        "status_code": status.HTTP_200_OK,
+        "response_type": "success",
+        "detail": "NUEVO endpoint"
     }
 
