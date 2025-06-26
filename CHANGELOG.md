@@ -1,6 +1,19 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [v0.3.0] - 2025-06-26
+
+## 📦 Uncategorized
+
+- chore: update CHANGELOG.md for v0.2.0
+   - PR: #0
+- feat: added some spaces in some files
+   - PR: #0
+- Merge pull request #8 from cgn170/feature/TICKET-009-changes-in-some-files
+   - PR: #0
+
+
+
 ## [v0.2.0] - 2025-06-26
 
 ## 📦 Uncategorized
