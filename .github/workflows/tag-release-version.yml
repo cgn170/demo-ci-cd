@@ -40,8 +40,9 @@ jobs:
           fi
           echo "previousTag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
           echo "Previous tag: $PREVIOUS_TAG"
-      - name: Generate Changelog
+      - name: Generate Changelog (disabled - using commit-based)
         id: changelog
+        if: false
         uses: mikepenz/release-changelog-builder-action@v4
         with:
           configuration: |
@@ -124,18 +125,17 @@ jobs:
               ]
             }
           includeOpen: false
-          fetchViaCommits: true
+          fetchViaCommits: false
           fetchReviewers: false
           fetchReleaseInformation: true
           fetchReviews: false
-          commitMode: true
+          commitMode: false
           fromTag: ${{ steps.previousTag.outputs.previousTag }}
           toTag: ${{ github.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Generate commit-based changelog if empty
+      - name: Generate commit-based changelog
         id: fallback_changelog
-        if: contains(steps.changelog.outputs.changelog, 'No changes in this release')
         run: |
           echo "Generating fallback changelog from commits..."
           PREVIOUS_TAG="${{ steps.previousTag.outputs.previousTag }}"
@@ -149,12 +149,9 @@ jobs:
 
           echo "Analyzing commits in range: $COMMIT_RANGE"
 
-          # Get commits and categorize them
+          # Get commits and categorize them - only features and bug fixes
           FEATURES=""
           FIXES=""
-          DOCS=""
-          CHORES=""
-          OTHERS=""
 
           while IFS= read -r commit; do
             if [ -n "$commit" ]; then
@@ -162,7 +159,7 @@ jobs:
               echo "Processing commit: $msg"
               
               # Skip merge commits and chore commits that update changelog
-              if [[ $msg =~ ^Merge.* ]] || [[ $msg =~ ^chore:.*CHANGELOG ]] || [[ $msg =~ ^chore:.*changelog ]] || [[ $msg =~ \[skip-changelog\] ]]; then
+              if [[ $msg =~ ^Merge.* ]] || [[ $msg =~ ^chore:.*CHANGELOG ]] || [[ $msg =~ ^chore:.*changelog ]] || [[ $msg =~ \[skip-changelog\] ]] || [[ $msg =~ "Merge pull request" ]]; then
                 echo "Skipping: $msg"
                 continue
               fi
@@ -175,38 +172,17 @@ jobs:
                 FIXES="$FIXES\n- ${msg#fix*: }"
               elif [[ $msg =~ ^bugfix(\(.+\))?: ]]; then
                 FIXES="$FIXES\n- ${msg#bugfix*: }"
-              elif [[ $msg =~ ^docs?(\(.+\))?: ]]; then
-                DOCS="$DOCS\n- ${msg#doc*: }"
-              elif [[ $msg =~ ^(chore|refactor|style|test|ci|perf|build)(\(.+\))?: ]]; then
-                # Only include non-changelog chore commits
-                if [[ ! $msg =~ CHANGELOG ]] && [[ ! $msg =~ changelog ]] && [[ ! $msg =~ \[skip-changelog\] ]]; then
-                  CHORES="$CHORES\n- ${msg#*: }"
-                fi
-              else
-                # Only include non-merge commits in others
-                if [[ ! $msg =~ ^Merge.* ]]; then
-                  OTHERS="$OTHERS\n- $msg"
-                fi
               fi
             fi
           done <<< "$(git rev-list $COMMIT_RANGE)"
 
-          # Build changelog
+          # Build changelog - only include features and bug fixes
           CHANGELOG=""
           if [ -n "$FEATURES" ]; then
             CHANGELOG="$CHANGELOG## 🚀 Features\n$FEATURES\n\n"
           fi
           if [ -n "$FIXES" ]; then
             CHANGELOG="$CHANGELOG## 🐛 Bug Fixes\n$FIXES\n\n"
-          fi
-          if [ -n "$DOCS" ]; then
-            CHANGELOG="$CHANGELOG## 📚 Documentation\n$DOCS\n\n"
-          fi
-          if [ -n "$CHORES" ]; then
-            CHANGELOG="$CHANGELOG## 🔧 Maintenance\n$CHORES\n\n"
-          fi
-          if [ -n "$OTHERS" ]; then
-            CHANGELOG="$CHANGELOG## 📝 Other Changes\n$OTHERS\n\n"
           fi
 
           if [ -z "$CHANGELOG" ]; then
@@ -232,19 +208,25 @@ jobs:
             echo "" >> CHANGELOG.md
           fi
 
-          # Determine which changelog to use
-          if [ "${{ steps.fallback_changelog.outputs.changelog }}" != "" ]; then
-            CHANGELOG_CONTENT="${{ steps.fallback_changelog.outputs.changelog }}"
-            echo "Using fallback changelog"
-          else
-            CHANGELOG_CONTENT="${{ steps.changelog.outputs.changelog }}"
-            echo "Using PR-based changelog"
+          # Use fallback changelog with proper cleaning
+          CHANGELOG_CONTENT="${{ steps.fallback_changelog.outputs.changelog }}"
+          echo "Using commit-based changelog"
+
+          # Clean changelog content inline
+          CLEANED_CHANGELOG=$(echo "$CHANGELOG_CONTENT" | grep -v "^- Merge pull request" | grep -v "^- chore: update CHANGELOG" | grep -v "PR: #0" | grep -v "^\s*- PR: #0" || echo "$CHANGELOG_CONTENT")
+
+          # If changelog is empty after cleaning, add a default message
+          if [ -z "$CLEANED_CHANGELOG" ] || [ "$CLEANED_CHANGELOG" = "" ]; then
+            CLEANED_CHANGELOG="- No notable changes in this release"
           fi
+
+          echo "Cleaned changelog:"
+          echo "$CLEANED_CHANGELOG"
 
           # Prepare the new entry
           echo "## [v${{ steps.gitversion.outputs.semVer }}] - $(date +%Y-%m-%d)" > temp_changelog.md
           echo "" >> temp_changelog.md
-          echo -e "$CHANGELOG_CONTENT" >> temp_changelog.md
+          echo -e "$CLEANED_CHANGELOG" >> temp_changelog.md
           echo "" >> temp_changelog.md
 
           # Insert new entry after the header
@@ -276,7 +258,7 @@ jobs:
         with:
           tag_name: v${{ steps.gitversion.outputs.semVer }}
           name: v${{ steps.gitversion.outputs.semVer }}
-          body: ${{ steps.fallback_changelog.outputs.changelog || steps.changelog.outputs.changelog }}
+          body: ${{ steps.fallback_changelog.outputs.changelog }}
           draft: false
           prerelease: false
           generate_release_notes: false

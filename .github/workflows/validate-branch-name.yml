@@ -67,8 +67,8 @@ jobs:
 
           # Define conventional commit pattern
           # Format: type(scope): description
-          # type: feat, fix, docs, style, refactor, test, chore, ci, perf, build
-          pattern="^(feat|feature|fix|docs|style|refactor|test|chore|ci|perf|build)(\(.+\))?: .{1,}"
+          # type: feat, feature, fix, bugfix
+          pattern="^(feat|feature|fix|bugfix|bug)(\(.+\))?: .{1,}"
 
           # Merge commit patterns to ignore
           merge_pattern="^Merge .+ into .+$|^Merge branch .+$|^Merge pull request .+$|^Merge remote-tracking branch .+$|^Merge tag .+$"
@@ -132,20 +132,10 @@ jobs:
             echo "Valid types:"
             echo "  - feat: A new feature"
             echo "  - fix: A bug fix"
-            echo "  - docs: Documentation only changes"
-            echo "  - style: Changes that do not affect code meaning (white-space, formatting, etc)"
-            echo "  - refactor: A code change that neither fixes a bug nor adds a feature"
-            echo "  - test: Adding missing tests or correcting existing tests"
-            echo "  - chore: Changes to build process or auxiliary tools"
-            echo "  - ci: Changes to CI configuration files and scripts"
-            echo "  - perf: A code change that improves performance"
-            echo "  - build: Changes that affect the build system or external dependencies"
             echo ""
             echo "✅ Valid examples:"
             echo "  - feat: add user authentication"
             echo "  - fix: resolve login validation error"
-            echo "  - docs: update API documentation"
-            echo "  - feat(auth): implement OAuth integration"
             echo "  - fix(ui): correct button alignment on mobile"
             echo ""
             echo "❌ Invalid examples:"
