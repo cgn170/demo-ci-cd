@@ -149,6 +149,7 @@ When you merge to `main`:
 - **Feature branch** merge → **Minor** version increase (1.0.0 → 1.1.0)
 - **Bugfix branch** merge → **Patch** version increase (1.0.0 → 1.0.1)
 - **Breaking changes** → **Major** version increase (1.0.0 → 2.0.0)
+- **Clean versioning**: Generates clean tags like `v1.2.3` (no CI suffixes)
 
 ## 📚 Complete Example Workflow
 
@@ -245,6 +246,12 @@ git log $(git describe --tags --abbrev=0)..HEAD --oneline
 **Q: Need to exclude a commit from changelog**
 
 - Add `ignore-for-release` label to the PR
+
+**Q: GitVersion generates CI versions like "v0.1.1-ci.8" instead of clean versions**
+
+- Change `mode: ContinuousDeployment` to `mode: ContinuousDelivery`
+- Add `mode: ContinuousDelivery` to each branch configuration
+- This generates clean versions like `v0.1.1` without CI suffixes
 
 **Q: GitVersion fails with "Property 'merge-message-formats' not found"**
 
