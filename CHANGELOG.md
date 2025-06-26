@@ -1,6 +1,12 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [v0.5.6] - 2025-06-26
+
+## 🐛 Bug Fixes
+
+- added main branch validation
+
 ## [v0.5.4] - 2025-06-26
 
 ## 🐛 Bug Fixes
