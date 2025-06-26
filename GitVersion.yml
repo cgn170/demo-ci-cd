@@ -8,7 +8,6 @@ branches:
   main:
     regex: ^main$
     increment: None
-    is-main-branch: true
   feature:
     regex: ^feature[/-]
     increment: None
