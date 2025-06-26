@@ -204,6 +204,16 @@ Every pull request automatically triggers validation checks:
 - Depends on validation passing
 - Generates semantic version based on branch type
 
+### 4. Changelog Generation
+
+- **Automatically categorizes commits** by type (🚀 Features, 🐛 Bug Fixes, 📚 Documentation, 🔧 Maintenance)
+- **Smart filtering** excludes unwanted commits:
+  - Merge commits (e.g., "Merge pull request #123...")
+  - Changelog update commits (e.g., "chore: update CHANGELOG.md...")
+  - Commits tagged with `[skip-changelog]`
+- **Fallback logic** generates changelog from commit messages if PR-based changelog is empty
+- **Clean format** without unnecessary PR references for commit-based generation
+
 ## 🛠️ Quick Commands
 
 ```bash
@@ -246,10 +256,18 @@ git log $(git describe --tags --abbrev=0)..HEAD --oneline
 - Use conventional commit messages
 - Add appropriate PR labels
 - Avoid commits labeled with `ignore-for-release`
+- **Note**: Merge commits, changelog update commits, and tagged commits are automatically excluded
 
 **Q: Need to exclude a commit from changelog**
 
 - Add `ignore-for-release` label to the PR
+- Or add `[skip-changelog]` tag to the commit message
+
+**Q: Changelog shows "PR: #0" or includes unwanted commits**
+
+- This has been fixed in the latest version
+- Merge commits, changelog update commits, and tagged commits are now automatically filtered out
+- Clean changelog format without PR numbers for commit-based generation
 
 **Q: GitVersion generates CI versions like "v0.1.1-ci.8" instead of clean versions**
 
