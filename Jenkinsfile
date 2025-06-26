@@ -16,7 +16,7 @@ pipeline {
 
   environment {
     APP_NAME = "demo-ci-cd"
-    DOCKER_REGISTRY = "harbor-registry.harbor-system.svc.cluster.local:5000/library"
+    DOCKER_REGISTRY = "harbor.devops.svc:8080/library"
     IMAGE_NAME = "${DOCKER_REGISTRY}" + "/" + "${APP_NAME}"
     DOCKERFILE_PATH = "Dockerfile"
     APP_NAME_LABEL = "${APP_NAME}"
@@ -72,6 +72,9 @@ pipeline {
     }
 
     stage('Build & Push with Kaniko') {
+      //when {
+      //  branch 'main'
+      //}
       steps {
             script {
                 container(name: 'kaniko', shell: '/busybox/sh') {
@@ -88,10 +91,31 @@ pipeline {
     }
 
     stage('Deploy in K8s: Staging') {
+    //when {
+    //  branch 'main'
+    //}
       steps {
         script {
-            container(name: 'kubectl') {
-                sh 'kubectl set image deployment/demo-ci-cd ${CONTAINER_NAME}=${IMAGE_NAME}:${VERSION} demo-ci-cd=${IMAGE_NAME}:${VERSION} -n staging '
+            container(name: 'kaniko', shell: '/busybox/sh') {
+                sh '''#!/busybox/sh
+                    set -x  # Print all commands before executing
+                    set -e  # Exit on any error
+                    
+                    echo "=== Starting Kubernetes Deployment ==="
+                    echo "Container Name: ${CONTAINER_NAME}"
+                    echo "Image Name: ${IMAGE_NAME}"
+                    echo "Version: ${VERSION}"
+                    echo "Namespace: staging"
+                    
+                    echo "=== Downloading kubectl ==="
+                    wget -O kubectl "https://dl.k8s.io/release/$(wget -qO- https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                    chmod +x kubectl
+                    
+                    echo "=== Executing kubectl command ==="
+                    ./kubectl set image deployment/demo-ci-cd ${CONTAINER_NAME}=${IMAGE_NAME}:${VERSION} -n staging
+                    
+                    echo "=== Deployment command completed ==="
+                '''
             }
         }
       }
