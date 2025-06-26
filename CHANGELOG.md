@@ -1,6 +1,15 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [v0.5.4] - 2025-06-26
+
+## 🐛 Bug Fixes
+
+- kubectl test
+- update pipeline docker registry
+- update pipeline docker registry
+- update pipeline docker registry
+
 ## [v0.5.2] - 2025-06-26
 
 ## 🐛 Bug Fixes
