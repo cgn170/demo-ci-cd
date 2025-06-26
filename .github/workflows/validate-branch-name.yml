@@ -68,7 +68,7 @@ jobs:
           # Define conventional commit pattern
           # Format: type(scope): description
           # type: feat, fix, docs, style, refactor, test, chore, ci, perf, build
-          pattern="^(feat|fix|docs|style|refactor|test|chore|ci|perf|build)(\(.+\))?: .{1,}"
+          pattern="^(feat|feature|fix|docs|style|refactor|test|chore|ci|perf|build)(\(.+\))?: .{1,}"
 
           failed_commits=()
 
