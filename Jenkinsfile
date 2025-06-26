@@ -91,7 +91,7 @@ pipeline {
       steps {
         script {
             container(name: 'kubectl') {
-                sh 'kubectl set image deployment/demo-ci-cd ${CONTAINER_NAME}=${IMAGE_NAME}:${VERSION} demo-ci-cd=${IMAGE_NAME}:${VERSION} -n staging '
+                sh 'kubectl set image deployment/demo-ci-cd ${CONTAINER_NAME}=${IMAGE_NAME}:${VERSION} -n staging '
             }
         }
       }
