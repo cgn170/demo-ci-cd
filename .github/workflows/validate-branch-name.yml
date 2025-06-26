@@ -1,0 +1,134 @@
+name: Validate Branch Name and Commit Messages
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate-branch-name:
+    name: Validate Branch Name Convention
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch name convention
+        run: |
+          branch_name="${{ github.head_ref }}"
+          echo "Branch name: $branch_name"
+
+          # Define the regex pattern
+          pattern="^(main|feature|bugfix)\/.*$"
+
+          # Check if branch name matches the pattern
+          if [[ $branch_name =~ $pattern ]]; then
+            echo "✅ Branch name '$branch_name' follows the convention"
+            echo "✅ Pattern: ^(main|feature|bugfix)/*$"
+          else
+            echo "❌ Branch name '$branch_name' does NOT follow the convention"
+            echo "❌ Expected pattern: ^(main|feature|bugfix)/*$"
+            echo ""
+            echo "Valid examples:"
+            echo "  - feature/CORE-777-add-payment-method"
+            echo "  - feature/some-important-feature"
+            echo "  - bugfix/fix-login-validation"
+            echo "  - bugfix/small-bug-fix-ui-interface"
+            echo ""
+            echo "Invalid examples:"
+            echo "  - my-feature (missing prefix)"
+            echo "  - develop (not allowed)"
+            echo "  - feature_new_thing (use hyphens, not underscores)"
+            echo ""
+            exit 1
+          fi
+
+  validate-commit-messages:
+    name: Validate Conventional Commit Messages
+    runs-on: ubuntu-latest
+    needs: validate-branch-name
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR commits
+        id: commits
+        run: |
+          # Get all commits in this PR
+          git fetch origin ${{ github.base_ref }}
+          commits=$(git rev-list --reverse origin/${{ github.base_ref }}..${{ github.sha }})
+          echo "Commits to validate:"
+          echo "$commits"
+          echo "commits<<EOF" >> $GITHUB_OUTPUT
+          echo "$commits" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Validate commit messages
+        run: |
+          echo "🔍 Validating conventional commit messages..."
+
+          # Define conventional commit pattern
+          # Format: type(scope): description
+          # type: feat, fix, docs, style, refactor, test, chore, ci, perf, build
+          pattern="^(feat|fix|docs|style|refactor|test|chore|ci|perf|build)(\(.+\))?: .{1,}"
+
+          failed_commits=()
+
+          # Check each commit
+          while IFS= read -r commit_sha; do
+            if [ -n "$commit_sha" ]; then
+              commit_msg=$(git log --format=%s -n 1 $commit_sha)
+              echo ""
+              echo "Checking commit: $commit_sha"
+              echo "Message: $commit_msg"
+              
+              if [[ $commit_msg =~ $pattern ]]; then
+                echo "✅ Valid conventional commit format"
+              else
+                echo "❌ Invalid conventional commit format"
+                failed_commits+=("$commit_sha: $commit_msg")
+              fi
+            fi
+          done <<< "${{ steps.commits.outputs.commits }}"
+
+          # Report results
+          if [ ${#failed_commits[@]} -eq 0 ]; then
+            echo ""
+            echo "🎉 All commit messages follow conventional commit format!"
+          else
+            echo ""
+            echo "❌ The following commits do NOT follow conventional commit format:"
+            echo ""
+            for failed_commit in "${failed_commits[@]}"; do
+              echo "  $failed_commit"
+            done
+            echo ""
+            echo "📋 Conventional Commit Format:"
+            echo "  <type>: <description>"
+            echo "  <type>(scope): <description>"
+            echo ""
+            echo "Valid types:"
+            echo "  - feat: A new feature"
+            echo "  - fix: A bug fix"
+            echo "  - docs: Documentation only changes"
+            echo "  - style: Changes that do not affect code meaning (white-space, formatting, etc)"
+            echo "  - refactor: A code change that neither fixes a bug nor adds a feature"
+            echo "  - test: Adding missing tests or correcting existing tests"
+            echo "  - chore: Changes to build process or auxiliary tools"
+            echo "  - ci: Changes to CI configuration files and scripts"
+            echo "  - perf: A code change that improves performance"
+            echo "  - build: Changes that affect the build system or external dependencies"
+            echo ""
+            echo "✅ Valid examples:"
+            echo "  - feat: add user authentication"
+            echo "  - fix: resolve login validation error"
+            echo "  - docs: update API documentation"
+            echo "  - feat(auth): implement OAuth integration"
+            echo "  - fix(ui): correct button alignment on mobile"
+            echo ""
+            echo "❌ Invalid examples:"
+            echo "  - added new feature (missing type)"
+            echo "  - fix stuff (too vague)"
+            echo "  - WIP (work in progress)"
+            echo "  - updated code (no type, vague)"
+            echo ""
+            exit 1
+          fi
