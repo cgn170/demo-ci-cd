@@ -79,13 +79,14 @@ pipeline {
 
     stage('Build & Push with Kaniko') {
       steps {
-        script {
-            container(name: 'kaniko', shell: '/busybox/sh') {
-                    sh '''#!/busybox/sh
-                      /kaniko/executor --dockerfile `pwd`/${DOCKERFILE_PATH} \
-                                      --context `pwd` \
-                                      --destination=${IMAGE_NAME}:${VERSION}
-                    '''
+            script {
+                container(name: 'kaniko', shell: '/busybox/sh') {
+                        sh '''#!/busybox/sh
+                        /kaniko/executor --dockerfile `pwd`/${DOCKERFILE_PATH} \
+                                        --context `pwd` \
+                                        --destination=${IMAGE_NAME}:${VERSION}
+                        '''
+                }
             }
         }
     }
@@ -103,6 +104,7 @@ pipeline {
     }
 
   }
+  
   post {
       success {
           slackSend message: "Job: ${env.JOB_NAME} - Build: ${env.BUILD_NUMBER} - was successful  (<${env.BUILD_URL}| Link>)"
