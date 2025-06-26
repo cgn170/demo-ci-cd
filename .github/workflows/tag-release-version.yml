@@ -30,6 +30,16 @@ jobs:
       - name: Display GitVersion outputs
         run: |
           echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
+      - name: Get previous tag
+        id: previousTag
+        run: |
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "")
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "No previous tag found, using initial commit"
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          echo "previousTag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+          echo "Previous tag: $PREVIOUS_TAG"
       - name: Generate Changelog
         id: changelog
         uses: mikepenz/release-changelog-builder-action@v4
@@ -62,12 +72,110 @@ jobs:
               "sort": "ASC",
               "template": "#{{CHANGELOG}}",
               "pr_template": "- #{{TITLE}} (##{{NUMBER}})",
-              "empty_template": "- No changes"
+              "empty_template": "- No changes in this release",
+              "base_branches": ["main"],
+              "transformers": [
+                {
+                  "pattern": "^(feat|feature)(\\(.+\\))?: (.+)",
+                  "target": "🚀 $3"
+                },
+                {
+                  "pattern": "^(fix|bugfix)(\\(.+\\))?: (.+)",
+                  "target": "🐛 $3"
+                },
+                {
+                  "pattern": "^(docs|doc)(\\(.+\\))?: (.+)",
+                  "target": "📚 $3"
+                },
+                {
+                  "pattern": "^(chore|refactor|style|test|ci)(\\(.+\\))?: (.+)",
+                  "target": "🔧 $3"
+                }
+              ]
             }
-          fromTag: ""
-          toTag: v${{ steps.gitversion.outputs.semVer }}
+          includeOpen: false
+          fetchViaCommits: true
+          fetchReviewers: false
+          fetchReleaseInformation: true
+          fetchReviews: false
+          commitMode: true
+          fromTag: ${{ steps.previousTag.outputs.previousTag }}
+          toTag: ${{ github.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate commit-based changelog if empty
+        id: fallback_changelog
+        if: contains(steps.changelog.outputs.changelog, 'No changes in this release')
+        run: |
+          echo "Generating fallback changelog from commits..."
+          PREVIOUS_TAG="${{ steps.previousTag.outputs.previousTag }}"
+
+          if [ -n "$PREVIOUS_TAG" ] && git rev-parse "$PREVIOUS_TAG" >/dev/null 2>&1; then
+            COMMIT_RANGE="$PREVIOUS_TAG..HEAD"
+          else
+            # If no previous tag, get commits from initial commit
+            COMMIT_RANGE=$(git rev-list --max-parents=0 HEAD)..HEAD
+          fi
+
+          echo "Analyzing commits in range: $COMMIT_RANGE"
+
+          # Get commits and categorize them
+          FEATURES=""
+          FIXES=""
+          DOCS=""
+          CHORES=""
+          OTHERS=""
+
+          while IFS= read -r commit; do
+            if [ -n "$commit" ]; then
+              msg=$(git log --format=%s -n 1 $commit)
+              echo "Processing commit: $msg"
+              
+              if [[ $msg =~ ^feat(\(.+\))?: ]]; then
+                FEATURES="$FEATURES\n- ${msg#feat*: }"
+              elif [[ $msg =~ ^fix(\(.+\))?: ]]; then
+                FIXES="$FIXES\n- ${msg#fix*: }"
+              elif [[ $msg =~ ^docs?(\(.+\))?: ]]; then
+                DOCS="$DOCS\n- ${msg#doc*: }"
+              elif [[ $msg =~ ^(chore|refactor|style|test|ci)(\(.+\))?: ]]; then
+                CHORES="$CHORES\n- ${msg#*: }"
+              else
+                OTHERS="$OTHERS\n- $msg"
+              fi
+            fi
+          done <<< "$(git rev-list $COMMIT_RANGE)"
+
+          # Build changelog
+          CHANGELOG=""
+          if [ -n "$FEATURES" ]; then
+            CHANGELOG="$CHANGELOG## 🚀 Features\n$FEATURES\n\n"
+          fi
+          if [ -n "$FIXES" ]; then
+            CHANGELOG="$CHANGELOG## 🐛 Bug Fixes\n$FIXES\n\n"
+          fi
+          if [ -n "$DOCS" ]; then
+            CHANGELOG="$CHANGELOG## 📚 Documentation\n$DOCS\n\n"
+          fi
+          if [ -n "$CHORES" ]; then
+            CHANGELOG="$CHANGELOG## 🔧 Maintenance\n$CHORES\n\n"
+          fi
+          if [ -n "$OTHERS" ]; then
+            CHANGELOG="$CHANGELOG## 📝 Other Changes\n$OTHERS\n\n"
+          fi
+
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="- No notable changes in this release"
+          fi
+
+          echo "Generated changelog:"
+          echo -e "$CHANGELOG"
+
+          # Save to output (escape newlines for GitHub Actions)
+          {
+            echo "changelog<<EOF"
+            echo -e "$CHANGELOG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
       - name: Update CHANGELOG.md
         run: |
           # Create or update CHANGELOG.md
@@ -78,10 +186,19 @@ jobs:
             echo "" >> CHANGELOG.md
           fi
 
+          # Determine which changelog to use
+          if [ "${{ steps.fallback_changelog.outputs.changelog }}" != "" ]; then
+            CHANGELOG_CONTENT="${{ steps.fallback_changelog.outputs.changelog }}"
+            echo "Using fallback changelog"
+          else
+            CHANGELOG_CONTENT="${{ steps.changelog.outputs.changelog }}"
+            echo "Using PR-based changelog"
+          fi
+
           # Prepare the new entry
           echo "## [v${{ steps.gitversion.outputs.semVer }}] - $(date +%Y-%m-%d)" > temp_changelog.md
           echo "" >> temp_changelog.md
-          echo "${{ steps.changelog.outputs.changelog }}" >> temp_changelog.md
+          echo -e "$CHANGELOG_CONTENT" >> temp_changelog.md
           echo "" >> temp_changelog.md
 
           # Insert new entry after the header
@@ -112,8 +229,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.gitversion.outputs.semVer }}
-          name: Release v${{ steps.gitversion.outputs.semVer }}
-          body: ${{ steps.changelog.outputs.changelog }}
+          name: v${{ steps.gitversion.outputs.semVer }}
+          body: ${{ steps.fallback_changelog.outputs.changelog || steps.changelog.outputs.changelog }}
           draft: false
           prerelease: false
           generate_release_notes: false
