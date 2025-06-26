@@ -72,9 +72,9 @@ pipeline {
     }
 
     stage('Build & Push with Kaniko') {
-      //when {
-      //  branch 'main'
-      //}
+      when {
+        branch 'main'
+      }
       steps {
             script {
                 container(name: 'kaniko', shell: '/busybox/sh') {
@@ -91,9 +91,9 @@ pipeline {
     }
 
     stage('Deploy in K8s: Staging') {
-    //when {
-    //  branch 'main'
-    //}
+    when {
+      branch 'main'
+    }
       steps {
         script {
             container(name: 'kaniko', shell: '/busybox/sh') {
