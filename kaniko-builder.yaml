@@ -30,3 +30,14 @@ spec:
         limits:
           memory: "1Gi"
           cpu: "1000m"
+      volumeMounts:
+        - name: docker-config
+          mountPath: /kaniko/.docker
+          readOnly: true
+  volumes:
+    - name: docker-config
+      secret:
+        secretName: harbor-registry-secret
+        items:
+          - key: .dockerconfigjson
+            path: config.json
