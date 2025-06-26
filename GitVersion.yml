@@ -1,15 +1,18 @@
-mode: ContinuousDeployment
+mode: ContinuousDelivery
 tag-prefix: "[vV]"
 commit-message-incrementing: MergeMessageOnly
 branches:
   main:
     regex: ^main$
     increment: Patch
+    mode: ContinuousDelivery
   feature:
     regex: ^feature[/-]
     increment: Minor
     source-branches: ["main"]
+    mode: ContinuousDelivery
   bugfix:
     regex: ^(bugfix|fix)[/-]
     increment: Patch
     source-branches: ["main"]
+    mode: ContinuousDelivery
