@@ -9,11 +9,3 @@ spec:
         - sleep
       args:
         - 7200
-      env:
-      volumeMounts:
-        - name: docker-cfg
-          mountPath: /kaniko/.docker
-  volumes:
-    - name: docker-cfg
-      configMap:
-        name: docker-config
