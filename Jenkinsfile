@@ -16,7 +16,7 @@ pipeline {
 
   environment {
     APP_NAME = "demo-ci-cd"
-    DOCKER_REGISTRY = "harbor.devops.svc:8080/library"
+    DOCKER_REGISTRY = "harbor-registry.harbor-system.svc.cluster.local:5000/library"
     IMAGE_NAME = "${DOCKER_REGISTRY}" + "/" + "${APP_NAME}"
     DOCKERFILE_PATH = "Dockerfile"
     APP_NAME_LABEL = "${APP_NAME}"
