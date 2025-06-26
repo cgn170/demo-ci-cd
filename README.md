@@ -246,6 +246,13 @@ git log $(git describe --tags --abbrev=0)..HEAD --oneline
 
 - Add `ignore-for-release` label to the PR
 
+**Q: GitVersion fails with "Property 'merge-message-formats' not found"**
+
+- The `merge-message-formats` property doesn't exist in GitVersion 5.x
+- Remove all `merge-message-formats` sections from your GitVersion.yml
+- Use `commit-message-incrementing: MergeMessageOnly` instead
+- Set branch-specific `increment` values directly (Minor, Patch, Major)
+
 **Q: GitVersion fails with "Property 'is-main-branch' not found"**
 
 - This property doesn't exist in GitVersion 5.x
