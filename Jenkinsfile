@@ -89,9 +89,7 @@ pipeline {
       steps {
         script {
             container(name: 'kubectl') {
-                sh 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"'  
-                sh 'chmod u+x ./kubectl'
-                sh './kubectl -n staging set image deployment/demo-ci-cd ${CONTAINER_NAME}=${IMAGE_NAME}:${VERSION} demo-ci-cd=${IMAGE_NAME}:${VERSION}'
+                sh 'kubectl set image deployment/demo-ci-cd ${CONTAINER_NAME}=${IMAGE_NAME}:${VERSION} demo-ci-cd=${IMAGE_NAME}:${VERSION} -n staging '
             }
         }
       }
