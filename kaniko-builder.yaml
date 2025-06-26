@@ -2,6 +2,20 @@ kind: Pod
 spec:
   serviceAccountName: jenkins-k8s-admin
   containers:
+    - name: node
+      image: node:16-alpine
+      imagePullPolicy: Always
+      command:
+        - sleep
+      args:
+        - 7200
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "250m"
+        limits:
+          memory: "512Mi"
+          cpu: "500m"
     - name: kaniko
       image: gcr.io/kaniko-project/executor:debug
       imagePullPolicy: Always
@@ -9,3 +23,10 @@ spec:
         - sleep
       args:
         - 7200
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "500m"
+        limits:
+          memory: "1Gi"
+          cpu: "1000m"
