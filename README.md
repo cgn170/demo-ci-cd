@@ -193,6 +193,9 @@ Every pull request automatically triggers validation checks:
 - Validates all commits in the PR
 - Enforces conventional commit format
 - Supports optional scope: `feat(scope): description`
+- **Automatically detects and skips merge commits** using:
+  - Parent count check (merge commits have multiple parents)
+  - Message pattern matching for various merge formats
 - Only runs if branch name validation passes
 
 ### 3. Release Process
@@ -226,8 +229,9 @@ git log $(git describe --tags --abbrev=0)..HEAD --oneline
 **Q: My PR failed with "Commit message validation failed"**
 
 - Use conventional commit format: `<type>: <description>` or `<type>(scope): <description>`
-- Valid types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `ci`, `perf`, `build`
+- Valid types: `feat`, `feature`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `ci`, `perf`, `build`
 - Examples: `feat: add login`, `fix: resolve validation error`, `feat(auth): add OAuth`
+- **Note**: Merge commits are automatically detected and skipped from validation (both by parent count and message patterns)
 - Amend your commit: `git commit --amend -m "feat: new message"`
 - For multiple commits, use interactive rebase: `git rebase -i HEAD~n`
 

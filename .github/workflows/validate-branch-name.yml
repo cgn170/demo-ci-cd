@@ -68,9 +68,13 @@ jobs:
           # Define conventional commit pattern
           # Format: type(scope): description
           # type: feat, fix, docs, style, refactor, test, chore, ci, perf, build
-          pattern="^(feat|fix|docs|style|refactor|test|chore|ci|perf|build)(\(.+\))?: .{1,}"
+          pattern="^(feat|feature|fix|docs|style|refactor|test|chore|ci|perf|build)(\(.+\))?: .{1,}"
+
+          # Merge commit patterns to ignore
+          merge_pattern="^Merge .+ into .+$|^Merge branch .+$|^Merge pull request .+$|^Merge remote-tracking branch .+$|^Merge tag .+$"
 
           failed_commits=()
+          skipped_commits=()
 
           # Check each commit
           while IFS= read -r commit_sha; do
@@ -80,6 +84,18 @@ jobs:
               echo "Checking commit: $commit_sha"
               echo "Message: $commit_msg"
               
+              # Check if this is a merge commit (has multiple parents)
+              parent_count=$(git rev-list --parents -n 1 $commit_sha | wc -w)
+              parent_count=$((parent_count - 1))  # Subtract 1 because the first item is the commit itself
+              
+              # Skip merge commits (either by parent count or message pattern)
+              if [ $parent_count -gt 1 ] || [[ $commit_msg =~ $merge_pattern ]]; then
+                echo "⏭️  Skipping merge commit (parents: $parent_count)"
+                skipped_commits+=("$commit_sha: $commit_msg")
+                continue
+              fi
+              
+              # Validate conventional commit format
               if [[ $commit_msg =~ $pattern ]]; then
                 echo "✅ Valid conventional commit format"
               else
@@ -90,6 +106,14 @@ jobs:
           done <<< "${{ steps.commits.outputs.commits }}"
 
           # Report results
+          if [ ${#skipped_commits[@]} -gt 0 ]; then
+            echo ""
+            echo "⏭️  Skipped merge commits:"
+            for skipped_commit in "${skipped_commits[@]}"; do
+              echo "  $skipped_commit"
+            done
+          fi
+
           if [ ${#failed_commits[@]} -eq 0 ]; then
             echo ""
             echo "🎉 All commit messages follow conventional commit format!"
@@ -129,6 +153,8 @@ jobs:
             echo "  - fix stuff (too vague)"
             echo "  - WIP (work in progress)"
             echo "  - updated code (no type, vague)"
+            echo ""
+            echo "ℹ️  Note: Merge commits are automatically skipped from validation"
             echo ""
             exit 1
           fi
