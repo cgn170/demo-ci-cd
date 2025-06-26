@@ -31,3 +31,15 @@ async def read_root():
         "response_type": "success",
         "detail": "Welcome to Demo API."
     }
+
+
+# Default test endpoint
+@app.get(f"{prefix_api_v1}/demo", 
+            response_description="Demo endpoint",)
+async def read_root():
+    return {
+        "status_code": status.HTTP_200_OK,
+        "response_type": "success",
+        "detail": "Demo endpoint"
+    }
+
