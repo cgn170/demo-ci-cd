@@ -49,19 +49,43 @@ jobs:
               "categories": [
                 {
                   "title": "## 🚀 Features",
-                  "labels": ["feature", "enhancement", "feat"]
+                  "labels": ["feature", "enhancement", "feat"],
+                  "rules": [
+                    {
+                      "pattern": "^(feat|feature)(\\(.+\\))?: (.+)",
+                      "on_property": "title"
+                    }
+                  ]
                 },
                 {
                   "title": "## 🐛 Bug Fixes", 
-                  "labels": ["bug", "fix", "bugfix"]
+                  "labels": ["bug", "fix", "bugfix"],
+                  "rules": [
+                    {
+                      "pattern": "^(fix|bugfix)(\\(.+\\))?: (.+)",
+                      "on_property": "title"
+                    }
+                  ]
                 },
                 {
                   "title": "## 📚 Documentation",
-                  "labels": ["documentation", "docs"]
+                  "labels": ["documentation", "docs"],
+                  "rules": [
+                    {
+                      "pattern": "^(docs?|documentation)(\\(.+\\))?: (.+)",
+                      "on_property": "title"
+                    }
+                  ]
                 },
                 {
                   "title": "## 🔧 Maintenance",
-                  "labels": ["maintenance", "chore", "refactor"]
+                  "labels": ["maintenance", "chore", "refactor"],
+                  "rules": [
+                    {
+                      "pattern": "^(chore|refactor|style|test|ci|perf|build)(\\(.+\\))?: (.+)",
+                      "on_property": "title"
+                    }
+                  ]
                 },
                 {
                   "title": "## 💥 Breaking Changes",
@@ -69,27 +93,33 @@ jobs:
                 }
               ],
               "ignore_labels": ["ignore-for-release"],
+              "ignore_by_title": [
+                "^Merge.*",
+                "^chore:.*CHANGELOG.*",
+                "^chore:.*changelog.*",
+                ".*\\[skip-changelog\\].*"
+              ],
               "sort": "ASC",
               "template": "#{{CHANGELOG}}",
-              "pr_template": "- #{{TITLE}} (##{{NUMBER}})",
+              "pr_template": "- #{{TITLE}}",
               "empty_template": "- No changes in this release",
               "base_branches": ["main"],
               "transformers": [
                 {
                   "pattern": "^(feat|feature)(\\(.+\\))?: (.+)",
-                  "target": "🚀 $3"
+                  "target": "$3"
                 },
                 {
                   "pattern": "^(fix|bugfix)(\\(.+\\))?: (.+)",
-                  "target": "🐛 $3"
+                  "target": "$3"
                 },
                 {
-                  "pattern": "^(docs|doc)(\\(.+\\))?: (.+)",
-                  "target": "📚 $3"
+                  "pattern": "^(docs?|documentation)(\\(.+\\))?: (.+)",
+                  "target": "$3"
                 },
                 {
-                  "pattern": "^(chore|refactor|style|test|ci)(\\(.+\\))?: (.+)",
-                  "target": "🔧 $3"
+                  "pattern": "^(chore|refactor|style|test|ci|perf|build)(\\(.+\\))?: (.+)",
+                  "target": "$3"
                 }
               ]
             }
@@ -131,16 +161,32 @@ jobs:
               msg=$(git log --format=%s -n 1 $commit)
               echo "Processing commit: $msg"
               
+              # Skip merge commits and chore commits that update changelog
+              if [[ $msg =~ ^Merge.* ]] || [[ $msg =~ ^chore:.*CHANGELOG ]] || [[ $msg =~ ^chore:.*changelog ]] || [[ $msg =~ \[skip-changelog\] ]]; then
+                echo "Skipping: $msg"
+                continue
+              fi
+              
               if [[ $msg =~ ^feat(\(.+\))?: ]]; then
                 FEATURES="$FEATURES\n- ${msg#feat*: }"
+              elif [[ $msg =~ ^feature(\(.+\))?: ]]; then
+                FEATURES="$FEATURES\n- ${msg#feature*: }"
               elif [[ $msg =~ ^fix(\(.+\))?: ]]; then
                 FIXES="$FIXES\n- ${msg#fix*: }"
+              elif [[ $msg =~ ^bugfix(\(.+\))?: ]]; then
+                FIXES="$FIXES\n- ${msg#bugfix*: }"
               elif [[ $msg =~ ^docs?(\(.+\))?: ]]; then
                 DOCS="$DOCS\n- ${msg#doc*: }"
-              elif [[ $msg =~ ^(chore|refactor|style|test|ci)(\(.+\))?: ]]; then
-                CHORES="$CHORES\n- ${msg#*: }"
+              elif [[ $msg =~ ^(chore|refactor|style|test|ci|perf|build)(\(.+\))?: ]]; then
+                # Only include non-changelog chore commits
+                if [[ ! $msg =~ CHANGELOG ]] && [[ ! $msg =~ changelog ]] && [[ ! $msg =~ \[skip-changelog\] ]]; then
+                  CHORES="$CHORES\n- ${msg#*: }"
+                fi
               else
-                OTHERS="$OTHERS\n- $msg"
+                # Only include non-merge commits in others
+                if [[ ! $msg =~ ^Merge.* ]]; then
+                  OTHERS="$OTHERS\n- $msg"
+                fi
               fi
             fi
           done <<< "$(git rev-list $COMMIT_RANGE)"
@@ -212,7 +258,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore: update CHANGELOG.md for v${{ steps.gitversion.outputs.semVer }}"
+            git commit -m "chore: update CHANGELOG.md for v${{ steps.gitversion.outputs.semVer }} [skip-changelog]"
             git push
           fi
       - name: Create tag
