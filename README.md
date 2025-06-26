@@ -206,13 +206,15 @@ Every pull request automatically triggers validation checks:
 
 ### 4. Changelog Generation
 
-- **Automatically categorizes commits** by type (🚀 Features, 🐛 Bug Fixes, 📚 Documentation, 🔧 Maintenance)
+- **Simplified categorization** shows only:
+  - **🚀 Features**: `feat:` and `feature:` commits
+  - **🐛 Bug Fixes**: `fix:` and `bugfix:` commits
 - **Smart filtering** excludes unwanted commits:
   - Merge commits (e.g., "Merge pull request #123...")
   - Changelog update commits (e.g., "chore: update CHANGELOG.md...")
   - Commits tagged with `[skip-changelog]`
-- **Fallback logic** generates changelog from commit messages if PR-based changelog is empty
-- **Clean format** without unnecessary PR references for commit-based generation
+  - All other commit types (docs, chore, style, etc.)
+- **Clean format** with proper categorization and no "Uncategorized" sections
 
 ## 🛠️ Quick Commands
 
@@ -263,11 +265,12 @@ git log $(git describe --tags --abbrev=0)..HEAD --oneline
 - Add `ignore-for-release` label to the PR
 - Or add `[skip-changelog]` tag to the commit message
 
-**Q: Changelog shows "PR: #0" or includes unwanted commits**
+**Q: Changelog shows "📦 Uncategorized" or includes unwanted commits**
 
-- This has been fixed in the latest version
-- Merge commits, changelog update commits, and tagged commits are now automatically filtered out
-- Clean changelog format without PR numbers for commit-based generation
+- **Fixed**: Now only includes `feat:`/`feature:` and `fix:`/`bugfix:` commits
+- Merge commits, changelog updates, and other commit types are automatically excluded
+- Clean format with only "🚀 Features" and "🐛 Bug Fixes" sections
+- No more "PR: #0" or "Uncategorized" entries
 
 **Q: GitVersion generates CI versions like "v0.1.1-ci.8" instead of clean versions**
 
