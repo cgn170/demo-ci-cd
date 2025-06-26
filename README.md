@@ -82,18 +82,12 @@ Use conventional commit format for automatic changelog generation:
 
 ### Commit Types:
 
-| Type       | Description                   | Changelog Category | Validation  |
-| ---------- | ----------------------------- | ------------------ | ----------- |
-| `feat`     | New feature                   | 🚀 Features        | ✅ Required |
-| `fix`      | Bug fix                       | 🐛 Bug Fixes       | ✅ Required |
-| `docs`     | Documentation changes         | 📚 Documentation   | ✅ Required |
-| `style`    | Code style (formatting, etc.) | 🔧 Maintenance     | ✅ Required |
-| `refactor` | Code refactoring              | 🔧 Maintenance     | ✅ Required |
-| `test`     | Adding tests                  | 🔧 Maintenance     | ✅ Required |
-| `chore`    | Maintenance tasks             | 🔧 Maintenance     | ✅ Required |
-| `ci`       | CI/CD changes                 | 🔧 Maintenance     | ✅ Required |
-| `perf`     | Performance improvements      | 🔧 Maintenance     | ✅ Required |
-| `build`    | Build system changes          | 🔧 Maintenance     | ✅ Required |
+| Type      | Description | Changelog Category | Validation  |
+| --------- | ----------- | ------------------ | ----------- |
+| `feat`    | New feature | 🚀 Features        | ✅ Required |
+| `feature` | New feature | 🚀 Features        | ✅ Required |
+| `fix`     | Bug fix     | 🐛 Bug Fixes       | ✅ Required |
+| `fixbug`  | Bug fix     | 🐛 Bug Fixes       | ✅ Required |
 
 ### ✅ Good Commit Examples:
 
@@ -102,14 +96,6 @@ feat: add Bancolombia payment integration
 feat(auth): implement OAuth integration
 fix: resolve login validation for special characters
 fix(ui): correct button alignment on mobile
-docs: update API documentation for payment endpoints
-style: format code according to ESLint rules
-chore: update dependencies to latest versions
-refactor: improve payment service error handling
-test: add unit tests for authentication module
-ci: update GitHub Actions workflow
-perf: optimize database queries
-build: update webpack configuration
 ```
 
 ### ❌ Bad Commit Examples:
@@ -124,14 +110,10 @@ WIP                  # Work in progress commits
 
 Label your PRs to ensure proper changelog categorization:
 
-| Label                              | Category                | Version Impact |
-| ---------------------------------- | ----------------------- | -------------- |
-| `feature`, `enhancement`, `feat`   | 🚀 Features             | Minor bump     |
-| `bug`, `fix`, `bugfix`             | 🐛 Bug Fixes            | Patch bump     |
-| `documentation`, `docs`            | 📚 Documentation        | -              |
-| `maintenance`, `chore`, `refactor` | 🔧 Maintenance          | -              |
-| `breaking-change`, `breaking`      | 💥 Breaking Changes     | Major bump     |
-| `ignore-for-release`               | Excluded from changelog | -              |
+| Label             | Category     | Version Impact |
+| ----------------- | ------------ | -------------- |
+| `feature`, `feat` | 🚀 Features  | Minor bump     |
+| `bug`, `bugfix`   | 🐛 Bug Fixes | Patch bump     |
 
 ## 🚀 Automated Release Process
 
@@ -215,86 +197,3 @@ Every pull request automatically triggers validation checks:
   - Commits tagged with `[skip-changelog]`
   - All other commit types (docs, chore, style, etc.)
 - **Clean format** with proper categorization and no "Uncategorized" sections
-
-## 🛠️ Quick Commands
-
-```bash
-# Check current version
-git describe --tags --abbrev=0
-
-# View recent releases
-git tag -l | sort -V | tail -5
-
-# See what will be in next release
-git log $(git describe --tags --abbrev=0)..HEAD --oneline
-```
-
-## 🔍 Troubleshooting
-
-**Q: My PR failed with "Branch name validation failed"**
-
-- Check your branch name follows the pattern: `^(main|feature|bugfix)\/*$`
-- Valid examples: `feature/my-feature`, `bugfix/fix-login`
-- Invalid examples: `my-feature`, `develop`, `feature_new_thing`
-- Rename your branch: `git branch -m old-name new-name`
-
-**Q: My PR failed with "Commit message validation failed"**
-
-- Use conventional commit format: `<type>: <description>` or `<type>(scope): <description>`
-- Valid types: `feat`, `feature`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `ci`, `perf`, `build`
-- Examples: `feat: add login`, `fix: resolve validation error`, `feat(auth): add OAuth`
-- **Note**: Merge commits are automatically detected and skipped from validation (both by parent count and message patterns)
-- Amend your commit: `git commit --amend -m "feat: new message"`
-- For multiple commits, use interactive rebase: `git rebase -i HEAD~n`
-
-**Q: My PR didn't trigger a version bump**
-
-- Check branch name follows the convention
-- Ensure PR has correct labels
-- Verify merge to `main` branch
-
-**Q: Changelog is empty or incorrect**
-
-- Use conventional commit messages
-- Add appropriate PR labels
-- Avoid commits labeled with `ignore-for-release`
-- **Note**: Merge commits, changelog update commits, and tagged commits are automatically excluded
-
-**Q: Need to exclude a commit from changelog**
-
-- Add `ignore-for-release` label to the PR
-- Or add `[skip-changelog]` tag to the commit message
-
-**Q: Changelog shows "📦 Uncategorized" or includes unwanted commits**
-
-- **Fixed**: Now only includes `feat:`/`feature:` and `fix:`/`bugfix:` commits
-- Merge commits, changelog updates, and other commit types are automatically excluded
-- Clean format with only "🚀 Features" and "🐛 Bug Fixes" sections
-- No more "PR: #0" or "Uncategorized" entries
-
-**Q: GitVersion generates CI versions like "v0.1.1-ci.8" instead of clean versions**
-
-- Change `mode: ContinuousDeployment` to `mode: ContinuousDelivery`
-- Add `mode: ContinuousDelivery` to each branch configuration
-- This generates clean versions like `v0.1.1` without CI suffixes
-
-**Q: GitVersion fails with "Property 'merge-message-formats' not found"**
-
-- The `merge-message-formats` property doesn't exist in GitVersion 5.x
-- Remove all `merge-message-formats` sections from your GitVersion.yml
-- Use `commit-message-incrementing: MergeMessageOnly` instead
-- Set branch-specific `increment` values directly (Minor, Patch, Major)
-
-**Q: GitVersion fails with "Property 'is-main-branch' not found"**
-
-- This property doesn't exist in GitVersion 5.x
-- Remove `is-main-branch: true` from your GitVersion.yml
-- The main branch is automatically detected by GitVersion
-
-**Q: Release workflow fails or doesn't trigger**
-
-- Ensure all validation checks pass first
-- Check that you're merging to the `main` branch
-- Verify GitVersion.yml syntax is correct
-
----

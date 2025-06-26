@@ -1,0 +1,19 @@
+kind: Pod
+spec:
+  serviceAccountName: jenkins-k8s-admin
+  containers:
+    - name: kaniko
+      image: gcr.io/kaniko-project/executor:debug
+      imagePullPolicy: Always
+      command:
+        - sleep
+      args:
+        - 7200
+      env:
+      volumeMounts:
+        - name: docker-cfg
+          mountPath: /kaniko/.docker
+  volumes:
+    - name: docker-cfg
+      configMap:
+        name: docker-config
