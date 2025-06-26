@@ -1,0 +1,119 @@
+name: tag-release-version
+on:
+  push:
+    branches:
+      - main
+jobs:
+  create-tag-version:
+    name: Create Tag Version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    outputs:
+      branchName: ${{ steps.gitversion.outputs.branchName }}
+    steps:
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v1.1.1
+        with:
+          versionSpec: "5.x"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v1.1.1
+        with:
+          useConfigFile: true
+          configFilePath: GitVersion.yml
+      - name: Display GitVersion outputs
+        run: |
+          echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
+      - name: Generate Changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          configuration: |
+            {
+              "categories": [
+                {
+                  "title": "## 🚀 Features",
+                  "labels": ["feature", "enhancement", "feat"]
+                },
+                {
+                  "title": "## 🐛 Bug Fixes", 
+                  "labels": ["bug", "fix", "bugfix"]
+                },
+                {
+                  "title": "## 📚 Documentation",
+                  "labels": ["documentation", "docs"]
+                },
+                {
+                  "title": "## 🔧 Maintenance",
+                  "labels": ["maintenance", "chore", "refactor"]
+                },
+                {
+                  "title": "## 💥 Breaking Changes",
+                  "labels": ["breaking-change", "breaking"]
+                }
+              ],
+              "ignore_labels": ["ignore-for-release"],
+              "sort": "ASC",
+              "template": "#{{CHANGELOG}}",
+              "pr_template": "- #{{TITLE}} (##{{NUMBER}})",
+              "empty_template": "- No changes"
+            }
+          fromTag: ""
+          toTag: v${{ steps.gitversion.outputs.semVer }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update CHANGELOG.md
+        run: |
+          # Create or update CHANGELOG.md
+          if [ ! -f CHANGELOG.md ]; then
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "All notable changes to this project will be documented in this file." >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+          fi
+
+          # Prepare the new entry
+          echo "## [v${{ steps.gitversion.outputs.semVer }}] - $(date +%Y-%m-%d)" > temp_changelog.md
+          echo "" >> temp_changelog.md
+          echo "${{ steps.changelog.outputs.changelog }}" >> temp_changelog.md
+          echo "" >> temp_changelog.md
+
+          # Insert new entry after the header
+          sed -i '3r temp_changelog.md' CHANGELOG.md
+          rm temp_changelog.md
+
+          # Commit the updated changelog
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add CHANGELOG.md
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update CHANGELOG.md for v${{ steps.gitversion.outputs.semVer }}"
+            git push
+          fi
+      - name: Create tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: "refs/tags/v${{ steps.gitversion.outputs.semVer }}",
+              sha: context.sha
+            })
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.gitversion.outputs.semVer }}
+          name: Release v${{ steps.gitversion.outputs.semVer }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          draft: false
+          prerelease: false
+          generate_release_notes: false

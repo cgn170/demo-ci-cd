@@ -1,0 +1,23 @@
+mode: ContinuousDeployment
+tag-prefix: "[vV]"
+commit-message-incrementing: Disabled
+merge-message-formats:
+  feature: "+semver: minor"
+  bugfix: "+semver: patch"
+branches:
+  main:
+    regex: ^main$
+    increment: None
+    is-main-branch: true
+  feature:
+    regex: ^feature[/-]
+    increment: None
+    source-branches: ["main"]
+    merge-message-formats:
+      - "+semver: minor"
+  bugfix:
+    regex: ^(bugfix|fix)[/-]
+    increment: None
+    source-branches: ["main"]
+    merge-message-formats:
+      - "+semver: patch"
