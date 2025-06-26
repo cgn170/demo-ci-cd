@@ -1,6 +1,6 @@
 FROM python:3.10
 
-COPY ./app /app
+COPY ./api/app /app
 
 ENV PYTHONPATH="/app"
 

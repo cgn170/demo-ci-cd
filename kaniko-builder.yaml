@@ -2,6 +2,20 @@ kind: Pod
 spec:
   serviceAccountName: jenkins-k8s-admin
   containers:
+    - name: node
+      image: node:16-alpine
+      imagePullPolicy: Always
+      command:
+        - sleep
+      args:
+        - 7200
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "250m"
+        limits:
+          memory: "512Mi"
+          cpu: "500m"
     - name: kaniko
       image: gcr.io/kaniko-project/executor:debug
       imagePullPolicy: Always
@@ -9,11 +23,35 @@ spec:
         - sleep
       args:
         - 7200
-      env:
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "500m"
+        limits:
+          memory: "1Gi"
+          cpu: "1000m"
       volumeMounts:
-        - name: docker-cfg
+        - name: docker-config
           mountPath: /kaniko/.docker
+          readOnly: true
+    - name: kubectl
+      image: bitnami/kubectl:latest
+      imagePullPolicy: Always
+      command:
+        - sleep
+      args:
+        - 7200
+      resources:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "256Mi"
+          cpu: "200m"
   volumes:
-    - name: docker-cfg
-      configMap:
-        name: docker-config
+    - name: docker-config
+      secret:
+        secretName: harbor-registry-secret
+        items:
+          - key: .dockerconfigjson
+            path: config.json

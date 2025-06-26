@@ -16,7 +16,7 @@ pipeline {
 
   environment {
     APP_NAME = "demo-ci-cd"
-    DOCKER_REGISTRY = "harbor-portal.harbor-system.svc.cluster.local:80/public"
+    DOCKER_REGISTRY = "harbor-registry.harbor-system.svc.cluster.local:5000/library"
     IMAGE_NAME = "${DOCKER_REGISTRY}" + "/" + "${APP_NAME}"
     DOCKERFILE_PATH = "Dockerfile"
     APP_NAME_LABEL = "${APP_NAME}"
@@ -24,12 +24,6 @@ pipeline {
   }
 
   stages {
-
-    stage("Cleanup Workspace") {
-      steps {
-        cleanWs()
-      }
-    }
 
     stage("Checkout from SCM"){
       steps {
@@ -79,36 +73,30 @@ pipeline {
 
     stage('Build & Push with Kaniko') {
       steps {
-        script {
-            container(name: 'kaniko', shell: '/busybox/sh') {
-                    sh '''#!/busybox/sh
-                      /kaniko/executor --dockerfile `pwd`/${DOCKERFILE_PATH} \
-                                      --context `pwd` \
-                                      --destination=${IMAGE_NAME}:${VERSION}
-                    '''
+            script {
+                container(name: 'kaniko', shell: '/busybox/sh') {
+                        sh '''#!/busybox/sh
+                        /kaniko/executor --dockerfile `pwd`/${DOCKERFILE_PATH} \
+                                        --context `pwd` \
+                                        --destination=${IMAGE_NAME}:${VERSION} \
+                                        --insecure \
+                                        --skip-tls-verify
+                        '''
+                }
             }
         }
     }
 
-    stage('Deploy in K8s') {
+    stage('Deploy in K8s: Staging') {
       steps {
         script {
-            withKubeConfig([namespace: "staging"]) {
-                sh 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"'  
-                sh 'chmod u+x ./kubectl'
-                sh './kubectl set image deployment/demo-ci-cd ${CONTAINER_NAME}=${IMAGE_NAME}:${VERSION} demo-ci-cd=${IMAGE_NAME}:${VERSION}'
+            container(name: 'kubectl') {
+                sh 'kubectl set image deployment/demo-ci-cd ${CONTAINER_NAME}=${IMAGE_NAME}:${VERSION} demo-ci-cd=${IMAGE_NAME}:${VERSION} -n staging '
             }
         }
       }
     }
 
   }
-  post {
-      success {
-          slackSend message: "Job: ${env.JOB_NAME} - Build: ${env.BUILD_NUMBER} - was successful  (<${env.BUILD_URL}| Link>)"
-      }
-      failure {
-          slackSend message: "Job: ${env.JOB_NAME} - Build: ${env.BUILD_NUMBER} - failed  (<${env.BUILD_URL}| Link>)", failOnError: true
-      }
-  }
+  
 }
