@@ -1,6 +1,23 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [v0.5.2] - 2025-06-26
+
+## 🐛 Bug Fixes
+
+- jenkinsfile pipeline bugfix
+- jenkinsfile pipeline bugfix
+- jenkinsfile pipeline bugfix
+- jenkinsfile pipeline bugfix
+- update pipeline docker registry
+- update pipeline docker registry
+- moved dockerfile to root path
+- added container to kaniko builder
+- removed cleanws
+- removed slack integration
+- fixed jenkinsfile
+- fixed jenkinsfile
+
 ## [v0.5.0] - 2025-06-26
 
 ## 🚀 Features
