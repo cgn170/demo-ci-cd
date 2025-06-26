@@ -34,20 +34,6 @@ spec:
         - name: docker-config
           mountPath: /kaniko/.docker
           readOnly: true
-    - name: kubectl
-      image: bitnami/kubectl:latest
-      imagePullPolicy: Always
-      command:
-        - sleep
-      args:
-        - 7200
-      resources:
-        requests:
-          memory: "128Mi"
-          cpu: "100m"
-        limits:
-          memory: "256Mi"
-          cpu: "200m"
   volumes:
     - name: docker-config
       secret:

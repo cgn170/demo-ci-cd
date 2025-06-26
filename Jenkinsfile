@@ -96,9 +96,8 @@ pipeline {
     //}
       steps {
         script {
-            container(name: 'kubectl', shell: '/bin/bash') {
-                sh '''
-                    #!/bin/bash
+            container(name: 'kaniko', shell: '/busybox/sh') {
+                sh '''#!/busybox/sh
                     set -x  # Print all commands before executing
                     set -e  # Exit on any error
                     
@@ -108,11 +107,15 @@ pipeline {
                     echo "Version: ${VERSION}"
                     echo "Namespace: staging"
                     
+                    echo "=== Downloading kubectl ==="
+                    wget -O kubectl "https://dl.k8s.io/release/$(wget -qO- https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                    chmod +x kubectl
+                    
                     echo "=== Executing kubectl command ==="
-                    kubectl set image deployment/demo-ci-cd ${CONTAINER_NAME}=${IMAGE_NAME}:${VERSION} -n staging
+                    ./kubectl set image deployment/demo-ci-cd ${CONTAINER_NAME}=${IMAGE_NAME}:${VERSION} -n staging
                     
                     echo "=== Deployment command completed ==="
-                    '''
+                '''
             }
         }
       }
