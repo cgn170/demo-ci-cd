@@ -85,13 +85,13 @@ pipeline {
         }
     }
 
-    stage('Deploy in K8s') {
+    stage('Deploy in K8s: Staging') {
       steps {
         script {
-            withKubeConfig([namespace: "staging"]) {
+            container(name: 'kubectl') {
                 sh 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"'  
                 sh 'chmod u+x ./kubectl'
-                sh './kubectl set image deployment/demo-ci-cd ${CONTAINER_NAME}=${IMAGE_NAME}:${VERSION} demo-ci-cd=${IMAGE_NAME}:${VERSION}'
+                sh './kubectl -n staging set image deployment/demo-ci-cd ${CONTAINER_NAME}=${IMAGE_NAME}:${VERSION} demo-ci-cd=${IMAGE_NAME}:${VERSION}'
             }
         }
       }
