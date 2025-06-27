@@ -1,6 +1,12 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [v0.6.0] - 2025-06-27
+
+## 🚀 Features
+
+- add nuevo endpoint to api
+
 ## [v0.5.6] - 2025-06-26
 
 ## 🐛 Bug Fixes
